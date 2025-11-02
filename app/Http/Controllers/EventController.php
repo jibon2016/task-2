@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\EventResource;
+use App\Http\Resources\TicketResource;
 use App\Models\Event;
+use App\Models\Ticket;
 use App\Traits\CommonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -102,6 +104,31 @@ class EventController extends Controller
             $this->status_message = 'Failed to update event';
             $this->status_code = 500;
             $this->status = false;
+        }
+        return $this->commonApiResponse();
+    }
+
+    public function delete(string $id)
+    {
+        try {
+            DB::beginTransaction();
+            $event = Event::query()->find($id);
+            if ($event) {
+                $event->delete();
+                $this->status_message = 'Event deleted successfully';
+            }else{
+                $this->status=false;
+                $this->status_code = 404;
+                $this->status_message = 'Event not found';
+                $this->status_class = 'failed';
+            }
+            DB::commit();
+        }catch (\Throwable $throwable){
+            DB::rollBack();
+            Log::error($throwable->getMessage());
+            $this->status_message = 'Failed! ' . $throwable->getMessage();
+            $this->status_code    = $this->status_code_failed;
+            $this->status         = false;
         }
         return $this->commonApiResponse();
     }
