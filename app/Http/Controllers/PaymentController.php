@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Http\Resources\PaymentResource;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Services\PaymentService;
 use App\Traits\CommonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,17 @@ class PaymentController extends Controller
 
         try {
             DB::beginTransaction();
+            $payment = (new PaymentService())->process([
+                'amount' => $request->input('amount', 0),
+                'booking_id' => $booking->id,
+            ]);
+            if (!$payment['success']) {
+                $this->status = false;
+                $this->status_message = 'Failed to create payment';
+                $this->data = $payment;
+                $this->status_code = 500;
+                return $this->commonApiResponse();
+            }
             $paymentMethod = Payment::create([
                 'booking_id' => $booking->id,
                 'amount' => $request->input('amount', 0),
