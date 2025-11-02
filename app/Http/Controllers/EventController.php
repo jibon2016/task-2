@@ -6,6 +6,7 @@ use App\Http\Resources\EventResource;
 use App\Http\Resources\TicketResource;
 use App\Models\Event;
 use App\Models\Ticket;
+use App\Traits\CommonQueryScopes;
 use App\Traits\CommonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +19,9 @@ class EventController extends Controller
     public function events(Request $request)
     {
         try {
-            $events = (new Event())->get_events($request);
-
+//            $events = (new Event())->get_events($request);
+            $events = Event::searchByTitle($request->input('title'))
+                ->paginate(10);
             $this->status_message = 'Events list';
             $this->data = [
                 'events' => EventResource::collection($events)->response()->getData(true),
