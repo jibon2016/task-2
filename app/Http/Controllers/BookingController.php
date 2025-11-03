@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\Ticket;
+use App\Notifications\BookingConfirm;
 use App\Traits\CommonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +74,9 @@ class BookingController extends Controller
                 'status' => $request->input('status'),
                 'quantity' => $request->input('quantity'),
             ]);
+            if ( $booking->status === BookingStatus::CONFIRMED->value ) {
+                $booking->user->notify(new BookingConfirm($booking));
+            }
             $this->status_message = 'Booking updated successfully';
             $this->data = new BookingResource($booking);
             DB::commit();

@@ -9,6 +9,7 @@ use App\Models\Ticket;
 use App\Traits\CommonQueryScopes;
 use App\Traits\CommonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -20,8 +21,10 @@ class EventController extends Controller
     {
         try {
 //            $events = (new Event())->get_events($request);
-            $events = Event::searchByTitle($request->input('title'))
-                ->paginate(10);
+            $cacheKey = 'events:' . md5(($request->input('title') ?? '') . ':page:' . ($request->input('page', 1)));
+            $events = Cache::store('file')->rememberForever($cacheKey, function () use ($request) {
+                return Event::searchByTitle($request->input('title'))->paginate(10);
+            });
             $this->status_message = 'Events list';
             $this->data = [
                 'events' => EventResource::collection($events)->response()->getData(true),
@@ -71,6 +74,7 @@ class EventController extends Controller
             $this->status_message = 'Event created successfully';
             $this->data = new EventResource($event);
             DB::commit();
+            Cache::store('file')->flush();
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error($e->getMessage());
